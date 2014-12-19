@@ -116,14 +116,14 @@ public class WindowsXPFinder {
 			Process nmapProcess = pb.start();
 			
 			// Get the data from the process being run
-			InputStream is = nmapProcess.getInputStream();
-	        InputStreamReader isr = new InputStreamReader(is);
-	        BufferedReader br = new BufferedReader(isr);
-	        String line;
+			InputStream inputStream = nmapProcess.getInputStream();
+			InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+			BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+			String line;
 	        
 	        // Begin looping over the data, adding new data lines to the line string
 	        // Cut out of the loop when the bufferedReader is out of data
-			while ((line = br.readLine()) != null)
+			while ((line = bufferedReader.readLine()) != null)
 			{
 			    System.out.println(line);
 			}
