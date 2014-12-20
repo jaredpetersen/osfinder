@@ -3,6 +3,10 @@ WindowsXPFinder
 
 Uses Nmap to find all Windows XP computers on the subnet
 
+WARNING
+===============
+This program is not to be used in its current state. Windows XP Finder is still in early alpha and more work needs to be done to ensure that the proper results are being returned. Work on Windows XP Finder will resume in early 2015.
+
 Instructions
 ===============
 1. Install Nmap for Windows (http://nmap.org/download.html#windows)
