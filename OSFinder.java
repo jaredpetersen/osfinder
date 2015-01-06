@@ -7,16 +7,16 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 
 /**
- * Windows XP Finder
- * This program uses Nmap and the windows command line to find all of the Windows XP computers
- * that are one the same subnet as the user.
+ * Rogue Computer Finder
+ * This program uses Nmap and the windows command line to find all of the Windows computers
+ * that are one the same subnet as the user (support for Windows XP and Windows 7).
  * 
  * @author Jared Petersen
- * @version 2.0 12/19/2014
+ * @version 3.0 01/06/2015
  * 
  * @param commands Nmap commands that are passed in by the main method
  */
-public class WindowsXPFinder {
+public class OSFinder {
 	
 	// ProcessBuilder is used to actually build and run applications (ipconfig and Nmap)
 	ProcessBuilder pb = new ProcessBuilder();
@@ -25,6 +25,12 @@ public class WindowsXPFinder {
 	InputStream inputStream;
     InputStreamReader inputStreamReader;
     BufferedReader bufferedReader;
+    
+    // Indicates whether the program will output extra stuff
+    static boolean extraOutput = false;
+    
+    // Operating System that is being searched for
+    static String searchOS = "Windows XP";
 	
 	/**
 	 * The main method. Creates an instance of this class that it then uses to find the subnet
@@ -34,23 +40,49 @@ public class WindowsXPFinder {
 	 */
 	public static void main(String[] args) {		
 		
+		// Loop over the arguments
+		for (String arg : args)
+		{
+			
+			// Check if the user wants extra output
+			if (arg.equals("-eo"))
+			{
+				extraOutput = true;
+			}
+			
+			// Check if the user wants to look for Windows 7 computers instead
+			else if (arg.equals("-os7"))
+			{
+				searchOS = "Windows 7";
+			}
+			
+			// Argument not found
+			else
+			{
+				// Print error message and shutdown the program
+				printInvalidArgument();
+				System.exit(1);
+			}
+			
+		}
+		
 		// Print starting message
 		printWelcome();
 		
 		// Create an instance of the class
-		WindowsXPFinder windowsXPFinder = new WindowsXPFinder();
+		OSFinder OSFinder = new OSFinder();
 		
 		// Find the subnet and let the user know
-		String subnet = windowsXPFinder.getSubnet() + "0";
+		String subnet = OSFinder.getSubnet() + ".0";
 		printFoundSubnet(subnet);
 		// Determine the name of the CSV output file
-		String fileName = "windowsxpfinder" + subnet + ".csv";
+		String fileName = "osfinder" + subnet + ".csv";
 		
 		// Use the previously determined subnet to run an Nmap command to find all of the OSs
 		// Nmap command should look something like nmap -p 445 --script smb-os-discovery 140.211.114.0/24
 		String finalCommand = subnet + "/24";
 		String[] commands = {"cmd.exe", "/c", "nmap ", "-p", "445", "--script", "smb-os-discovery", finalCommand};
-		windowsXPFinder.executeNmapCommand(commands, fileName);
+		OSFinder.executeNmapCommand(commands, fileName);
 		
 		// Print the closing message
 		printQuit(fileName);
@@ -120,8 +152,8 @@ public class WindowsXPFinder {
 	
 	/**
 	 * Executes the Nmap OS detection command passed into it (see main method) in ProcessBuilder
-	 * format and prints the output into the console. Will later do some filtering to only 
-	 * return Windows XP computers.
+	 * format and outputs the desired data to a CSV file. Also outputs the data to the terminal if user
+	 * elects to do so at startup.
 	 * 
 	 * @param commands Nmap commands that are passed in by the main method
 	 */
@@ -131,7 +163,7 @@ public class WindowsXPFinder {
 		String hardware = null;
 		String operatingSystem = null;
 		String computerName = null;
-		int xpFound = 0;
+		int osFound = 0;
 		
 		printNmapStatus();
 		
@@ -140,6 +172,7 @@ public class WindowsXPFinder {
 			// Give ProcessBuilder the Nmap commands
 			pb.command(commands);
 			pb.redirectErrorStream(true);
+			
 			// Start the process
 			Process nmapProcess = pb.start();
 			
@@ -162,9 +195,58 @@ public class WindowsXPFinder {
 	        // Cut out of the loop when the bufferedReader is out of data
 			while ((line = bufferedReader.readLine()) != null)
 			{
+				
+				// See if the scan found a new computer
+				if (line.startsWith("Nmap scan report for"))
+				{
+					// Scan found a new computer, output the previous data
+					
+					// Make sure that the previous data is all there and is what we're looking for
+					if (checkDataValid(macAddress, operatingSystem, computerName))
+					{
+						
+						// Didn't test for hardware earlier because that's more of an added bonus
+		    			// Testing now so that we can remove the parenthesis that is part of the data
+		    			if (hardware != null)
+			    		{
+			    			// Remove parenthesis before outputting hardware string
+					    	hardware = hardware.replace("(", "").replace(")", "");
+			    		}
+		    			
+		    			else
+		    			{
+		    				// String was null, just make it an empty string
+		    				hardware = "";
+		    			}
+		    			
+		    			// Write the data to the CSV file
+				    	bufferedWriter.write(operatingSystem + ", " + computerName + ", " + hardware + ", " + macAddress);
+				    	bufferedWriter.newLine();
+				    	
+				    	// Increment the Windows XP computers found counter
+				    	osFound++;
+				    	
+				    	// Check if the user wants the output to be displayed in the terminal
+				    	if (extraOutput)
+				    	{
+				    		// Print out the variables in the terminal
+				    		System.out.println(macAddress + " " + hardware + " " + operatingSystem + " " + computerName);
+				    	}
+				    }
+					
+					// Else -- Do nothing
+					
+					// Set variables back to null
+					macAddress = null;
+					operatingSystem = null;
+			    	computerName = null;
+			    	hardware = null;
+				}
+				
 				// Get the MAC Address
-		    	if (line.startsWith("MAC Address: "))
+				else if (line.startsWith("MAC Address: "))
 			    {
+					// Assign necessary data to strings for later processing
 					macAddress = line.substring(13, 30);
 					hardware = line.substring(31);
 			    }
@@ -172,50 +254,18 @@ public class WindowsXPFinder {
 		    	// Get the Operating System
 		    	else if (line.startsWith("|   OS: "))
 			    {
-					operatingSystem = line.substring(8);
+		    		// Assign OS data to a string for later processing
+		    		operatingSystem = line.substring(8);
 			    }
 		    	
 		    	// Get the Computer Name
 		    	else if (line.startsWith("|   Computer name: "))
 			    {
-					computerName = line.substring(19);
+		    		// Assign computer name data to a string for later processing
+		    		computerName = line.substring(19);
 			    }
 		    	
 		    	// Else -- Do nothing
-			    
-		    	// See if all of the information is there
-		    	if (macAddress != null && operatingSystem != null && computerName != null)
-			    {
-			    	// Check if the computer is Windows XP
-		    		if (operatingSystem.startsWith("Windows 7"))
-	    			{
-				    	// Didn't test for hardware earlier because that's more of an added bonus
-		    			// Testing now so that we can remove the parenthesis that were part of the data
-		    			if (hardware != null)
-			    		{
-			    			// Remove Parenthesis before outputting hardware string
-					    	hardware = hardware.replace("(", "").replace(")", "");
-			    		}
-		    			else
-		    			{
-		    				hardware = "";
-		    			}
-				    	
-				    	// Write the data to the CSV file
-				    	bufferedWriter.write(operatingSystem + ", " + computerName + ", " + hardware + ", " + macAddress);
-				    	bufferedWriter.newLine();
-				    	
-				    	// Increment the Windows XP computers found counter
-				    	xpFound++;
-	    			}
-			    }
-		    	
-		    	// Set variables back to null, next computer
-		    	operatingSystem = null;
-		    	computerName = null;
-		    	hardware = null;
-		    	macAddress = null;
-		    	//System.out.println(line);
 		    	
 			}
 			
@@ -232,8 +282,8 @@ public class WindowsXPFinder {
 	        	// An exitValue of 0 is complete success
 	            if (exitValue == 0)
 	            {
-	            	// Print a sucess message and the number of Windows XP computers found
-	            	printSuccess(xpFound);
+	            	// Print a sucess message and the number of <INSERT OS HERE> computers found
+	            	printSuccess(osFound);
 	            }
 	            // Anything else can indicate a problem with either ProcessBuilder or the command being run
 	            else
@@ -258,6 +308,32 @@ public class WindowsXPFinder {
         
 	}
 	
+	private boolean checkDataValid(String macAddress, String operatingSystem, String computerName)
+	{
+		// See if all of the information is there
+    	if (macAddress != null && operatingSystem != null && computerName != null)
+	    {
+	    	// Check if the computer has the desired OS
+    		if (operatingSystem.startsWith(searchOS))
+			{
+		    	// Found the OS we're looking for    			
+    			return true;
+			}
+    		
+    		else
+    		{
+    			// OS is not desired
+    			return false;
+    		}
+	    }
+    	
+    	else
+    	{
+    		// Not enough data
+    		return false;
+    	}
+	}
+	
 	// -------------------------------------------------------------------------------------------------
 	// ------------------------------ Methods used to print notifications ------------------------------
 	// -------------------------------------------------------------------------------------------------
@@ -267,7 +343,7 @@ public class WindowsXPFinder {
 	 */
 	private static void printWelcome()
 	{
-		System.out.println("Starting Windows XP Finder. Please Wait...\n");
+		System.out.println("Starting OSFinder. Please Wait...\n");
 	}
 	
 	/**
@@ -291,17 +367,17 @@ public class WindowsXPFinder {
 	 */
 	private void printNmapStatus()
 	{
-		System.out.println("Executing Nmap OS Scan...");
+		System.out.println("Executing Nmap OS Scan...\n");
 	}
 	
 	/**
-	 * Prints the number of Windows XP machines found by the application
+	 * Prints the number of computers found by the application with the OS we're looking for
 	 * 
-	 * @param xpFound The number of Windows XP Computers found
+	 * @param xpFound The number of computers with the desired OS that have been found
 	 */
-	private void printSuccess(int xpFound)
+	private void printSuccess(int osFound)
 	{
-		System.out.println(xpFound + " Windows XP Computers were found.");
+		System.out.println(osFound + " " + searchOS + " Computers were found.");
 	}
 	
 	/**
@@ -309,7 +385,7 @@ public class WindowsXPFinder {
 	 */
 	private void printNmapProcessError()
 	{
-		System.out.println("Nmap command may have failed. Consider restarting Windows XP Finder.");
+		System.out.println("Nmap command may have failed. Consider restarting OSFinder.");
 	}
 	
 	/**
@@ -319,6 +395,14 @@ public class WindowsXPFinder {
 	 */
 	private static void printQuit(String fileName)
 	{
-		System.out.println("\nData was saved to " + fileName + "\nQuitting Windows XP Finder.");
+		System.out.println("\nData was saved to " + fileName + "\nQuitting OSFinder.");
+	}
+	
+	/**
+	 * Prints an invalid argument error message to the end user
+	 */
+	private static void printInvalidArgument()
+	{
+		System.out.println("Invalid argument:\nPlease see the manual at https://github.com/jaredpetersen/OSFinder");
 	}
 }
