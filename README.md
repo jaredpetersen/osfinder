@@ -11,11 +11,11 @@ Instructions
 
 How it Works
 ===============
-The program first finds the computer's subnet from running a command on the windows command line (```ipconfig | findstr [0-9]```), which returns the computer's local ethernet gateway along with some other information. The program then uses the subnet in an Nmap command (```nmap -p 445 --script smb-os-discovery ###.###.###.0/24```), which is also run from the windows command line. OSFinder then parses the results of the Nmap command and only returns the operating system, computer name, hardware (based on the MAC Address), and the MAC Address.
+The program first finds the computer's subnet from running a command on the windows command line (`ipconfig | findstr [0-9]`), which returns the computer's local ethernet gateway along with some other information. The program then uses the subnet in an Nmap command (`nmap -p 445 --script smb-os-discovery ###.###.###.0/24`), which is also run from the windows command line. OSFinder then parses the results of the Nmap command and only returns the operating system, computer name, hardware (based on the MAC Address), and the MAC Address.
 
 Arguments
 ===============
-| Argument     | Explanation                                                                 |
-| ------------ | --------------------------------------------------------------------------- |
-| (```-eos```) | Outputs the data written into the CSV file into the terminal window as well |
-| (```-os7```) | Looks for Windows 7 computers only, instead of the default Windows XP       |
+| Argument   | Explanation                                                                 |
+| ---------- | --------------------------------------------------------------------------- |
+| `-eos` | Outputs the data written into the CSV file into the terminal window as well |
+| `-os7` | Looks for Windows 7 computers only, instead of the default Windows XP       |
