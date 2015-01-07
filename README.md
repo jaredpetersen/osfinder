@@ -6,8 +6,8 @@ OSFinder uses Nmap to find the operating system, computer name, hardware, and th
 Instructions
 ===============
 1. Install Nmap for Windows (http://nmap.org/download.html#windows)
-2. Download the OSFinder Java file and turn it into a JAR (http://docs.oracle.com/javase/tutorial/deployment/jar/build.html)
-3. Connect to the desired subnet via ethernet and run the JAR file (http://stackoverflow.com/questions/8511063/how-to-run-jar-file-by-double-click-on-windows-7-64). Additional arguments can be used as well (see the Arguments section).
+2. Download the OSFinder Java file and turn it into a JAR OR just download the JAR file directly from http://www.wou.edu/~jpetersen11/OSFinder-v3.0.jar
+3. Connect to the desired subnet via ethernet and run the JAR file (`java -jar OSFinder-v3.0.jar` in the same directory as the file). Arguments can be used as well (e.g., `java -jar OSFinder-v3.0.jar -eo -os7`).
 
 How it Works
 ===============
@@ -15,7 +15,7 @@ The program first finds the computer's subnet from running a command on the wind
 
 Arguments
 ===============
-| Argument   | Explanation                                                                 |
-| ---------- | --------------------------------------------------------------------------- |
-| `-eos` | Outputs the data written into the CSV file into the terminal window as well |
-| `-os7` | Looks for Windows 7 computers only, instead of the default Windows XP       |
+| Argument | Explanation                                                                 |
+| -------- | --------------------------------------------------------------------------- |
+| `-eo`    | Outputs the data written into the CSV file into the terminal window as well |
+| `-os7`   | Looks for Windows 7 computers only, instead of the default Windows XP       |
