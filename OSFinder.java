@@ -73,7 +73,7 @@ public class OSFinder {
 		OSFinder OSFinder = new OSFinder();
 		
 		// Find the subnet and let the user know
-		String subnet = OSFinder.getSubnet() + ".0";
+		String subnet = OSFinder.getSubnet();
 		printFoundSubnet(subnet);
 		// Determine the name of the CSV output file
 		String fileName = "osfinder" + subnet + ".csv";
@@ -125,7 +125,13 @@ public class OSFinder {
 				    if (line.startsWith("   Default Gateway . . . . . . . . . : "))
 				    {
 				    	// Get the subnet
-				    	subnet = line.substring(39, 50);
+				    	subnet = line.substring(39);
+				    	
+				    	// Get only the first three sections of the subnet
+				    	// Replace the last section with a 0 so that the whole subnet can be scanned
+				    	subnet = subnet.substring(0, subnet.indexOf('.', subnet.indexOf('.', subnet.indexOf('.') + 1) + 1) + 1) + '0';
+				    	
+				    	// Get out of the loop, we found what we needed
 				    	break;
 				    }
 				}
@@ -343,7 +349,7 @@ public class OSFinder {
 	 */
 	private static void printWelcome()
 	{
-		System.out.println("Starting OSFinder. Please Wait...\n");
+		System.out.println("\nStarting OSFinder. Please Wait...\n");
 	}
 	
 	/**
@@ -359,7 +365,7 @@ public class OSFinder {
 	 */
 	private static void printFoundSubnet(String subnet)
 	{
-		System.out.println("Subnet is " + subnet);
+		System.out.println("Subnet is " + subnet + "\n");
 	}
 	
 	/**
@@ -367,7 +373,7 @@ public class OSFinder {
 	 */
 	private void printNmapStatus()
 	{
-		System.out.println("Executing Nmap OS Scan...\n");
+		System.out.println("Executing Nmap OS Scan...");
 	}
 	
 	/**
@@ -377,7 +383,20 @@ public class OSFinder {
 	 */
 	private void printSuccess(int osFound)
 	{
-		System.out.println(osFound + " " + searchOS + " Computers were found.");
+		String pluralOrSingular;
+		
+		if (osFound == 1)
+		{
+			pluralOrSingular = " computer was found.";
+		}
+		else
+		{
+			pluralOrSingular = " computers were found.";
+		}
+		
+		System.out.println(osFound + " " + searchOS + pluralOrSingular);
+
+		
 	}
 	
 	/**
